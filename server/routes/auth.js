@@ -1,39 +1,49 @@
-// server/routes/auth.js
-const express = require('express');
+const express = require("express");
 const router = express.Router();
-const { registerSchema, loginSchema } = require('../validation');
-const { signToken, hashPassword, comparePassword, getUserByEmail, createUser } = require('../utils/auth');
+const bcrypt = require("bcryptjs");
+const jwt = require("jsonwebtoken");
+const User = require("../models/User");
 
+const JWT_SECRET = "your_super_secret_key"; // store in env file in production
 
-router.post('/register', async (req, res) => {
-try {
-const data = registerSchema.parse(req.body);
-const existing = getUserByEmail(data.email);
-if (existing) return res.status(400).json({ error: 'Email already in use' });
-const password_hash = await hashPassword(data.password);
-const user = createUser({ username: data.username, email: data.email, password_hash });
-const token = signToken(user);
-res.json({ token, user });
-} catch (e) {
-res.status(400).json({ error: e.errors?.[0]?.message || 'Invalid input' });
-}
+// Register
+router.post("/register", async (req, res) => {
+  try {
+    const { username, email, password } = req.body;
+
+    const existingUser = await User.findOne({ email });
+    if (existingUser) return res.status(400).json({ message: "Email already in use" });
+
+    const passwordHash = await bcrypt.hash(password, 10);
+
+    const newUser = new User({ username, email, passwordHash });
+    await newUser.save();
+
+    const token = jwt.sign({ id: newUser._id }, JWT_SECRET, { expiresIn: "7d" });
+
+    res.json({ token });
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ message: "Registration error" });
+  }
 });
 
+// Login
+router.post("/login", async (req, res) => {
+  try {
+    const { email, password } = req.body;
+    const user = await User.findOne({ email });
+    if (!user) return res.status(400).json({ message: "Invalid credentials" });
 
-router.post('/login', async (req, res) => {
-try {
-const data = loginSchema.parse(req.body);
-const u = getUserByEmail(data.email);
-if (!u) return res.status(401).json({ error: 'Invalid credentials' });
-const ok = await comparePassword(data.password, u.password_hash);
-if (!ok) return res.status(401).json({ error: 'Invalid credentials' });
-const user = { id: u.id, username: u.username, email: u.email, address: u.address, created_at: u.created_at };
-const token = signToken(user);
-res.json({ token, user });
-} catch (e) {
-res.status(400).json({ error: e.errors?.[0]?.message || 'Invalid input' });
-}
+    const isMatch = await user.comparePassword(password);
+    if (!isMatch) return res.status(400).json({ message: "Invalid credentials" });
+
+    const token = jwt.sign({ id: user._id }, JWT_SECRET, { expiresIn: "7d" });
+    res.json({ token });
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ message: "Login error" });
+  }
 });
-
 
 module.exports = router;

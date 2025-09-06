@@ -1,79 +1,85 @@
-const db = require('../db');
+const Product = require("../models/Product");
 
-
-exports.getAllProducts = (req, res) => {
-db.all('SELECT * FROM products', [], (err, rows) => {
-if (err) return res.status(500).json({ error: err.message });
-res.json(rows);
-});
+// @desc    Get all products
+// @route   GET /api/products
+exports.getAllProducts = async (req, res) => {
+  try {
+    const products = await Product.find();
+    res.json(products);
+  } catch (err) {
+    res.status(500).json({ message: "Server Error" });
+  }
 };
 
-
-exports.getProductById = (req, res) => {
-const { id } = req.params;
-db.get('SELECT * FROM products WHERE id = ?', [id], (err, row) => {
-if (err) return res.status(500).json({ error: err.message });
-res.json(row);
-});
+// @desc    Get product by ID
+// @route   GET /api/products/:id
+exports.getProductById = async (req, res) => {
+  try {
+    const product = await Product.findById(req.params.id);
+    if (!product) return res.status(404).json({ message: "Product not found" });
+    res.json(product);
+  } catch (err) {
+    res.status(500).json({ message: "Server Error" });
+  }
 };
 
+// @desc    Create product
+// @route   POST /api/products
+exports.createProduct = async (req, res) => {
+  try {
+    const { title, description, price, category } = req.body;
 
-exports.createProduct = (req, res) => {
-const { title, description, category, price } = req.body;
-const image = req.file ? req.file.filename : null;
-const userId = req.user.id;
+    const product = new Product({
+      title,
+      description,
+      price,
+      category,
+      imageUrl: req.file ? `/uploads/${req.file.filename}` : undefined,
+    });
 
-
-db.run(
-'INSERT INTO products (title, description, category, price, image, user_id) VALUES (?, ?, ?, ?, ?, ?)',
-[title, description, category, price, image, userId],
-function (err) {
-if (err) return res.status(500).json({ error: err.message });
-res.status(201).json({ id: this.lastID });
-}
-);
+    await product.save();
+    res.status(201).json(product);
+  } catch (err) {
+    res.status(500).json({ message: "Server Error" });
+  }
 };
 
+// @desc    Update product
+// @route   PUT /api/products/:id
+exports.updateProduct = async (req, res) => {
+  try {
+    const { title, description, price, category } = req.body;
 
-exports.updateProduct = (req, res) => {
-const { id } = req.params;
-const { title, description, category, price } = req.body;
-const image = req.file ? req.file.filename : null;
+    const updateData = {
+      title,
+      description,
+      price,
+      category,
+    };
 
+    if (req.file) {
+      updateData.imageUrl = `/uploads/${req.file.filename}`;
+    }
 
-db.run(
-'UPDATE products SET title = ?, description = ?, category = ?, price = ?, image = ? WHERE id = ?',
-[title, description, category, price, image, id],
-function (err) {
-if (err) return res.status(500).json({ error: err.message });
-res.json({ message: 'Product updated successfully' });
-}
-);
+    const product = await Product.findByIdAndUpdate(req.params.id, updateData, {
+      new: true,
+    });
+
+    if (!product) return res.status(404).json({ message: "Product not found" });
+    res.json(product);
+  } catch (err) {
+    res.status(500).json({ message: "Server Error" });
+  }
 };
 
-
-exports.deleteProduct = (req, res) => {
-const { id } = req.params;
-db.run('DELETE FROM products WHERE id = ?', [id], function (err) {
-if (err) return res.status(500).json({ error: err.message });
-res.json({ message: 'Product deleted successfully' });
-});
-};
-
-
-exports.searchProducts = (req, res) => {
-const { keyword } = req.params;
-db.all('SELECT * FROM products WHERE title LIKE ?', [`%${keyword}%`], (err, rows) => {
-if (err) return res.status(500).json({ error: err.message });
-res.json(rows);
-});
-};
-
-
-exports.getProductsByCategory = (req, res) => {
-const { category } = req.params;
-db.all('SELECT * FROM products WHERE category = ?', [category], (err, rows) => {
-if (err) return res.status(500).json({ error: err.message });
-res.json(rows);
-});
+// @desc    Delete product
+// @route   DELETE /api/products/:id
+exports.deleteProduct = async (req, res) => {
+  try {
+    const product = await Product.findByIdAndDelete(req.params.id);
+    if (!product) return res.status(404).json({ message: "Product not found" });
+    res.json({ message: "Product removed" });
+  } catch (err) {
+    res.status(500).json({ message: "Server Error" });
+  }
 };

@@ -10,6 +10,7 @@ EcoFinds aims to:
 - Extend the lifecycle of products by connecting buyers and sellers.
 - Provide a clean, user-friendly platform for sustainable shopping.
 - Build trust and foster a community around conscious consumption.
+- Reduce environmental impact by lowering waste and carbon emissions through reuse.
 
 ---
 
@@ -29,8 +30,9 @@ EcoFinds aims to:
   - Search products by keyword.
   - Product detail view page.
 
-- **Cart & Previous Purchases (Backend ready)**
+- **Cart & Purchases**
   - Add to cart and view previous purchases.
+  - Checkout functionality to move cart items to purchases.
 
 ---
 
@@ -41,11 +43,12 @@ EcoFinds aims to:
 - **Vite** for fast development
 - **Axios** for API calls
 - **React Router** for navigation
-- **Tailwind CSS** (if styling is applied)
+- **Tailwind CSS** for styling
 
 ### **Backend**
 - **Node.js + Express**
-- **SQLite3** for local database
+- **MongoDB** for database
+- **Mongoose** for object modeling
 - **Multer** for file uploads
 - **JWT** for authentication
 
@@ -56,20 +59,19 @@ EcoFinds aims to:
 ecofinds/
 │
 ├── server/               # Backend
-│   ├── routes/           # Express routes
-│   │   └── products.js
+│   ├── models/           # Mongoose models (User, Product, CartItem, Purchase)
+│   ├── routes/           # Express routes (auth.js, products.js, cart.js, purchases.js)
 │   ├── controllers/      # Logic for routes
 │   ├── middleware/       # Authentication middleware
-│   ├── db.js             # SQLite database setup
-│   ├── index.js          # Express server entry point
-│   └── uploads/          # Product images
+│   ├── uploads/          # Product images
+│   └── index.js          # Express server entry point
 │
 └── web/                  # Frontend
     └── ecofinds-web/
         ├── src/
-        │   ├── pages/    # React pages (Home, AddProduct, AuthPage, ProductDetail)
-        │   ├── utils/    # API helper
-        │   │   └── api.ts
+        │   ├── pages/    # React pages (Home, AddProduct, AuthPage, ProductDetail, Cart)
+        │   ├── components/ # Navbar, Footer, etc.
+        │   ├── utils/    # API helper (api.ts)
         │   └── App.tsx
         └── public/
 ```
@@ -80,7 +82,7 @@ ecofinds/
 
 ### **1. Clone the Repository**
 ```bash
-git clone https://github.com/your-username/ecofinds.git
+git clone https://github.com/PreethamAcharya/ecofinds.git
 cd ecofinds
 ```
 
@@ -97,6 +99,8 @@ npm install
 node index.js
 ```
 > Backend will run at **http://localhost:5000**
+
+Make sure MongoDB is running locally or update `index.js` with your MongoDB Atlas URI.
 
 ---
 
@@ -118,20 +122,17 @@ npm run dev
 
 | Method | Endpoint              | Description            |
 |--------|----------------------|------------------------|
-| POST   | `/api/auth/register` | Register a new user    |
-| POST   | `/api/auth/login`    | Login user & get token |
-| GET    | `/api/products`      | Get all products       |
-| POST   | `/api/products`      | Create new product     |
-| PUT    | `/api/products/:id`  | Update product         |
-| DELETE | `/api/products/:id`  | Delete product         |
-
----
-
-## 🧑‍💻 **Hackathon Guidelines Followed**
-- Real-time data using SQLite (no static JSON).
-- Backend APIs built from scratch (no Firebase/Supabase dependency).
-- Responsive and clean UI.
-- Proper Git version control with meaningful commits.
+| POST   | `/auth/register`      | Register a new user    |
+| POST   | `/auth/login`         | Login user & get token |
+| GET    | `/products`           | Get all products       |
+| POST   | `/products`           | Create new product     |
+| PUT    | `/products/:id`       | Update product         |
+| DELETE | `/products/:id`       | Delete product         |
+| GET    | `/cart`               | Get current user's cart|
+| POST   | `/cart`               | Add product to cart    |
+| DELETE | `/cart/:id`           | Remove item from cart  |
+| POST   | `/cart/checkout`      | Checkout cart items    |
+| GET    | `/cart/purchases`     | Get previous purchases |
 
 ---
 

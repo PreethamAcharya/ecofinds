@@ -1,58 +1,92 @@
-// server/routes/products.js
-
-const express = require('express');
+const express = require("express");
 const router = express.Router();
-const multer = require('multer');
-const path = require('path');
-const auth = require('../middleware/auth'); // ✅ Correct import
+const multer = require("multer");
+const path = require("path");
+const { authenticateUser } = require("../middleware/auth");
+const Product = require("../models/Product");
 
-// Controller functions
-const {
-    getAllProducts,
-    getProductById,
-    createProduct,
-    updateProduct,
-    deleteProduct,
-    searchProducts,
-    getProductsByCategory
-} = require('../controllers/productController');
-
-// =============================
-// Multer Configuration for Image Uploads
-// =============================
+// Configure multer for image uploads
 const storage = multer.diskStorage({
-    destination: (req, file, cb) => {
-        cb(null, 'uploads/'); // Images saved to 'uploads' folder
-    },
-    filename: (req, file, cb) => {
-        // Unique filename: timestamp + extension
-        cb(null, Date.now() + path.extname(file.originalname));
-    }
+  destination: (req, file, cb) => {
+    cb(null, "uploads/");
+  },
+  filename: (req, file, cb) => {
+    cb(null, Date.now() + path.extname(file.originalname));
+  },
 });
 
 const upload = multer({ storage });
 
-// =============================
-// Routes
-// =============================
-
-// Extra features must come **before `/:id`** to avoid route conflicts
-router.get('/search/:keyword', searchProducts);
-router.get('/category/:category', getProductsByCategory);
-
 // Get all products
-router.get('/', getAllProducts);
+router.get("/", async (req, res) => {
+  try {
+    const products = await Product.find();
+    res.json(products);
+  } catch (err) {
+    res.status(500).json({ message: "Error fetching products" });
+  }
+});
 
-// Get a single product by ID
-router.get('/:id', getProductById);
+// Get product by ID
+router.get("/:id", async (req, res) => {
+  try {
+    const product = await Product.findById(req.params.id);
+    if (!product) return res.status(404).json({ message: "Product not found" });
+    res.json(product);
+  } catch (err) {
+    res.status(500).json({ message: "Error fetching product" });
+  }
+});
 
-// Create a new product (Protected + image upload)
-router.post('/', auth, upload.single('image'), createProduct);
+// Create product
+router.post("/", authenticateUser, upload.single("image"), async (req, res) => {
+  try {
+    const { title, description, category, price } = req.body;
+    const newProduct = new Product({
+      title,
+      description,
+      category,
+      price,
+      imageUrl: req.file ? `/uploads/${req.file.filename}` : null,
+    });
+    await newProduct.save();
+    res.status(201).json(newProduct);
+  } catch (err) {
+    res.status(400).json({ message: "Error creating product" });
+  }
+});
 
-// Update a product (Protected + image upload)
-router.put('/:id', auth, upload.single('image'), updateProduct);
+// Update product
+router.put("/:id", authenticateUser, upload.single("image"), async (req, res) => {
+  try {
+    const { title, description, category, price } = req.body;
+    const updatedData = {
+      title,
+      description,
+      category,
+      price,
+    };
+    if (req.file) updatedData.imageUrl = `/uploads/${req.file.filename}`;
 
-// Delete a product (Protected)
-router.delete('/:id', auth, deleteProduct);
+    const product = await Product.findByIdAndUpdate(req.params.id, updatedData, { new: true });
+    if (!product) return res.status(404).json({ message: "Product not found" });
+
+    res.json(product);
+  } catch (err) {
+    res.status(400).json({ message: "Error updating product" });
+  }
+});
+
+// Delete product
+router.delete("/:id", authenticateUser, async (req, res) => {
+  try {
+    const product = await Product.findByIdAndDelete(req.params.id);
+    if (!product) return res.status(404).json({ message: "Product not found" });
+
+    res.json({ message: "Product deleted" });
+  } catch (err) {
+    res.status(500).json({ message: "Error deleting product" });
+  }
+});
 
 module.exports = router;
