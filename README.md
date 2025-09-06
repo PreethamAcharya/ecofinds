@@ -10,6 +10,7 @@ EcoFinds aims to:
 - Extend the lifecycle of products by connecting buyers and sellers.
 - Provide a clean, user-friendly platform for sustainable shopping.
 - Build trust and foster a community around conscious consumption.
+- Reduce environmental impact by lowering waste and carbon emissions through reuse.
 
 ---
 
